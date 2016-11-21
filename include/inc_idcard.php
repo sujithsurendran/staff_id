@@ -11,12 +11,15 @@ $err_email = $err_password = "";
 
 if($_SERVER['REQUEST_METHOD'] == "POST") {
 	if(validate_fields()) {
+
+
+
 		if($_SESSION['id'] = write_data()){
 			array_push($arr_alert, "Welcome on board.");
-			header('Location:' . SITE_URL . '/staff_details.php');			
+			header('Location:' . SITE_URL . '/staff_details.php');
 		}else {
 
-			header('Location:' . SITE_URL . '/idcard.php');			
+			header('Location:' . SITE_URL . '/idcard.php');
 		}
 	}
 }
@@ -36,27 +39,28 @@ global $email, $password, $name;
 			$id = $conn->lastInsertId();
 
 		}catch(PDOException $e){
-			
+			die($e->getCode());
 			if($e->getCode() == 23000 ){
 			// employee record already available
 
 				// chek password
-				$sql = "SELECT id FROM users WHERE password=? AND email=?";
-				$qry = $conn->query(array($password, $email));
+				$qry = $conn->prepare("SELECT id FROM users WHERE password=? AND email=?");
+
+				$qry->execute(array(md5($password), $email));
 				if($qry->rowCount() == 1){
 					$user = $qry->fetch(PDO::fetch_assoc);
 					$id = $user['id'];
-					
+
 				}else{
 					// Invalid user
 					$id = false;
 				}
-		
-				
+
+
 
 			}else {
 			// error unable to insert
-				
+
 				array_push($arr_alert, $sql . "<br>" . $e->getMessage()) ;
 				$id =  false;
 			}

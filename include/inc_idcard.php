@@ -11,12 +11,13 @@ $err_email = $err_password = "";
 
 if($_SERVER['REQUEST_METHOD'] == "POST") {
 	if(validate_fields()) {
-		if($_SESSION['id'] = write_data()){
+
+		if(write_data()){
 			array_push($arr_alert, "Welcome on board.");
-			header('Location:' . SITE_URL . '/staff_details.php');			
+			header('Location:' . SITE_URL . 'staff_details.php');
 		}else {
 
-			header('Location:' . SITE_URL . '/idcard.php');			
+			header('Location:' . SITE_URL . 'idcard.php');
 		}
 	}
 }
@@ -27,41 +28,44 @@ function write_data(){
 global $conn, $arr_alert;
 global $email, $password, $name;
 
-		$sql = "INSERT INTO users (emailid, password)
-		VALUES ('". $email. "', '". md5($password) . "')";
 
 		try {
 
-			$conn->exec($sql);
-			$id = $conn->lastInsertId();
+			$qry = $conn->prepare("INSERT INTO users (email, password)
+		VALUES (?,?)");
+			$qry->execute(array($email, $password));
+			$_SESSION['id'] = $conn->lastInsertId();
+			
+			return true;
 
 		}catch(PDOException $e){
-			
+
 			if($e->getCode() == 23000 ){
 			// employee record already available
 
-				// chek password
-				$sql = "SELECT id FROM users WHERE password=? AND email=?";
-				$qry = $conn->query(array($password, $email));
+				// check password
+				$qry = $conn->prepare("SELECT id FROM users WHERE password=? AND email=?");
+				$qry->execute(array(md5($password), $email));
 				if($qry->rowCount() == 1){
-					$user = $qry->fetch(PDO::fetch_assoc);
-					$id = $user['id'];
+					$user = $qry->fetch(PDO::FETCH_ASSOC);
+					$_SESSION['id'] = $user['id'];
+					return true;
 					
 				}else{
 					// Invalid user
-					$id = false;
+					return false;
 				}
-		
-				
+
+
 
 			}else {
 			// error unable to insert
-				
+
 				array_push($arr_alert, $sql . "<br>" . $e->getMessage()) ;
-				$id =  false;
+				return  false;
 			}
 		}
-	return $id;
+	
 }
 
 
